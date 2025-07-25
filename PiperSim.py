@@ -78,7 +78,7 @@ class MujocoController:
     
 
 if __name__ == "__main__":
-    # 替换为你的模型路径
+    
     model_path = "assets/Piper/scene.xml" 
     # 创建控制器
     controller = MujocoController(model_path)
