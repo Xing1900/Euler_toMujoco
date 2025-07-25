@@ -13,7 +13,7 @@ class MujocoController:
         # 初始化渲染器 
         self.viewer = mujoco.viewer.launch_passive(self.model, self.data)
         self.viewer.cam.lookat[:] = [0, 0, 0.4]  # 设置目标点
-        self.viewer.cam.distance = 7.5         # 设置摄像头距离
+        self.viewer.cam.distance = 2.5         # 设置摄像头距离
         self.viewer.cam.elevation = -25        # 设置俯仰角
         self.viewer.cam.azimuth = 90           # 设置方位角
         
@@ -29,10 +29,11 @@ class MujocoController:
         self.kd = [2.5, 2, 2, 0.01, 0.01, 0.01, 0.01, 0.01]   # 速度微分增益
         
     def get_joint_info(self):
-        """获取关节信息"""
+        """获取关节信息与运动范围"""
         print(f"模型包含 {self.num_joints} 个关节:")
         for i, name in enumerate(self.joint_names):
-            print(f"{i}: {name}")
+            joint_range=self.model.jnt_range[i]
+            print(f"{i}: {name},range: {joint_range[0]:<.2f} to {joint_range[1]:<.2f}")
         return self.joint_names
     
     def set_target_joint_positions(self, target_positions):
@@ -78,19 +79,41 @@ class MujocoController:
     
 
 if __name__ == "__main__":
-    
+
     model_path = "assets/Piper/scene.xml" 
     # 创建控制器
     controller = MujocoController(model_path)
     # 获取关节信息
-    joint_names = controller.get_joint_info()
-    
+
+    joint_names = controller.get_joint_info()  
+    '''
+    0: joint1,range: -2.62 to 2.62 躯干Yaw
+    1: joint2,range: -1.57 to 1.57 
+    2: joint3,range: -1.64 to 1.33
+    3: joint4,range: -1.83 to 1.83 固定1.83
+    4: joint5,range: -1.22 to 1.22 手肘Yaw
+    5: joint6,range: -3.14 to 3.14 手腕Roll
+    6: joint7,range: -0.04 to 0.00 夹爪开合
+    7: joint8,range: -0.04 to 0.00 夹爪开合
+    '''
     target_positions = np.zeros(controller.num_joints)
-    target_positions[:6] = [1.2, -0.8, 0.5, 0.3, 0.8, 0.5]  # 设置前6个关节的目标位置
+    #设定初始位置
+    target_positions[0] = math.radians(0)  #大臂Yaw角————大臂IMUYaw角
+    target_positions[1] = math.radians(-45)  
+    target_positions[2] = math.radians(25)  #肩关节Pitch角————大臂IMUPitch角
+    target_positions[3] = 1.57  # 固定值 
+    target_positions[4] = math.radians(0)  # 手肘Yaw角————小臂IMUYaw角
+    target_positions[5] = 0  # 假设手腕Roll角————手部IMURoll角
+    target_positions[6] = 0  # 假设夹爪开合角度
+    target_positions[7] = 0  # 假设夹爪开合角度
     while (controller.viewer.is_running()):
         # 设置目标位置
         controller.set_target_joint_positions(target_positions)
         # 运行仿真
         controller.update()
+        # 获取IMU欧拉角 添加获取IMU欧拉角的代码
+        
+        # 欧拉角转为目标关节位置
+    
 
     controller.close() 
